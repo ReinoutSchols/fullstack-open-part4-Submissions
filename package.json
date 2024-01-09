@@ -8,8 +8,8 @@
     "dev": "nodemon index.js",
     "build:ui": "rm -rf dist && cd ../frontend && npm run build && cp -r dist ../backend",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "jest --verbose"
   },
   "author": "Reinout Schols",
   "license": "ISC",
@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "lodash": "^4.17.21",
     "mongodb": "^6.3.0",
     "mongoose": "^7.6.5"
   },
@@ -24,6 +25,11 @@
     "eslint": "^8.56.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
+    "jest": "^29.7.0",
     "nodemon": "^3.0.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "verbose": true
   }
 }
