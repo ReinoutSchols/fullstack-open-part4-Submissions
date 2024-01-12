@@ -10,6 +10,7 @@ const usersRouter = require('./controllers/users');
 const loginRouter = require('./controllers/login');
 const middleware = require('./utils/middleware');
 const logger = require('./utils/logger');
+
 // eslint-disable-next-line import/order
 const mongoose = require('mongoose');
 
@@ -29,6 +30,9 @@ app.use(cors());
 // app.use(express.static('dist'));
 app.use(express.json());
 app.use(middleware.requestLogger);
+
+app.use(middleware.getTokenFrom);
+app.use(middleware.userExtractor);
 
 app.use('/api/users', usersRouter);
 app.use('/api/blogs', blogsRouter);

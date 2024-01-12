@@ -1,13 +1,10 @@
+/* eslint-disable prefer-destructuring */
+/* eslint-disable consistent-return */
 /* eslint-disable no-underscore-dangle */
 // To define routehandling
 const blogsRouter = require('express').Router();
 const jwt = require('jsonwebtoken');
 const Blog = require('../models/blog');
-const User = require('../models/user');
-const { errorHandler, getTokenFrom } = require('../utils/middleware');
-
-blogsRouter.use(getTokenFrom);
-blogsRouter.use(errorHandler);
 
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog
@@ -24,7 +21,7 @@ blogsRouter.post('/', async (request, response) => {
   if (!decodedToken.id) {
     return response.status(401).json({ error: 'token invalid' });
   }
-  const user = await User.findById(decodedToken.id);
+  const user = request.user;
 
   if (
     (url === undefined || url === null) || (title === undefined || title === null)
@@ -57,7 +54,7 @@ blogsRouter.delete('/:id', async (request, response) => {
   const blogId = request.params.id;
   const blog = await Blog.findById(blogId);
 
-  if (!blog || blog.user.toString() !== decodedToken.id) {
+  if (!blog || blog.user.toString() !== request.user.id) {
     return response.status(404).json({ error: 'Blog not found' });
   }
 

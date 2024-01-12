@@ -1,6 +1,9 @@
+/* eslint-disable consistent-return */
 /* eslint-disable no-else-return */
 // To define all middleware used in project. (logger, errorhandler, unknownendpoint)
+const jwt = require('jsonwebtoken');
 const logger = require('./logger');
+const User = require('../models/user');
 
 const requestLogger = (request, response, next) => {
   logger.info('Method:', request.method);
@@ -38,9 +41,26 @@ const getTokenFrom = (request, response, next) => {
   next();
 };
 
+const userExtractor = async (request, response, next) => {
+  const decodedToken = jwt.verify(request.token, process.env.SECRET);
+
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'Token invalid' });
+  }
+
+  const user = await User.findById(decodedToken.id);
+  if (!user) {
+    return response.status(401).json({ error: 'User not found' });
+  }
+
+  request.user = user;
+  next();
+};
+
 module.exports = {
   requestLogger,
   unknownEndpoint,
   errorHandler,
   getTokenFrom,
+  userExtractor,
 };
