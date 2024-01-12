@@ -1,8 +1,13 @@
 /* eslint-disable no-underscore-dangle */
 // To define routehandling
 const blogsRouter = require('express').Router();
+const jwt = require('jsonwebtoken');
 const Blog = require('../models/blog');
 const User = require('../models/user');
+const { errorHandler, getTokenFrom } = require('../utils/middleware');
+
+blogsRouter.use(getTokenFrom);
+blogsRouter.use(errorHandler);
 
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog
@@ -13,14 +18,21 @@ blogsRouter.get('/', async (request, response) => {
 // eslint-disable-next-line consistent-return
 blogsRouter.post('/', async (request, response) => {
   const {
-    title, url, likes, userId, author,
+    title, url, likes, author,
   } = request.body;
-  const user = await User.findById(userId);
+  const decodedToken = jwt.verify(request.token, process.env.SECRET);
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token invalid' });
+  }
+  const user = await User.findById(decodedToken.id);
+  // const userValidation = await User.findById(userId);
+
   if (
     (url === undefined || url === null) || (title === undefined || title === null)
   ) {
     return response.status(400).json({ error: 'Title and URL are required' });
   }
+
   const blogData = {
     title,
     url,
@@ -28,6 +40,7 @@ blogsRouter.post('/', async (request, response) => {
     user: user.id,
     author,
   };
+
   const newblog = new Blog(blogData);
   const result = await newblog.save();
   user.blogs = user.blogs.concat(result._id);

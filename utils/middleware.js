@@ -1,3 +1,4 @@
+/* eslint-disable no-else-return */
 // To define all middleware used in project. (logger, errorhandler, unknownendpoint)
 const logger = require('./logger');
 
@@ -21,12 +22,25 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).send({ error: 'malformatted id' });
   } if (error.name === 'ValidationError') {
     return response.status(400).json({ error: error.message });
+  } if (error.name === 'JsonWebTokenError') {
+    return response.status(401).json({ error: error.message });
   }
   next(error);
+};
+
+const getTokenFrom = (request, response, next) => {
+  const authorization = request.get('authorization');
+  if (authorization && authorization.startsWith('Bearer ')) {
+    request.token = authorization.replace('Bearer ', '');
+  } else {
+    request.token = null;
+  }
+  next();
 };
 
 module.exports = {
   requestLogger,
   unknownEndpoint,
   errorHandler,
+  getTokenFrom,
 };
