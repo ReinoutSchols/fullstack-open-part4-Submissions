@@ -4,6 +4,7 @@
 // To define routehandling
 const blogsRouter = require('express').Router();
 const jwt = require('jsonwebtoken');
+const middleware = require('../utils/middleware');
 const Blog = require('../models/blog');
 
 blogsRouter.get('/', async (request, response) => {
@@ -13,7 +14,7 @@ blogsRouter.get('/', async (request, response) => {
 });
 
 // eslint-disable-next-line consistent-return
-blogsRouter.post('/', async (request, response) => {
+blogsRouter.post('/', middleware.getTokenFrom, middleware.userExtractor, async (request, response) => {
   const {
     title, url, likes, author,
   } = request.body;
@@ -45,7 +46,7 @@ blogsRouter.post('/', async (request, response) => {
   response.status(201).json(result);
 });
 
-blogsRouter.delete('/:id', async (request, response) => {
+blogsRouter.delete('/:id', middleware.getTokenFrom, middleware.userExtractor, async (request, response) => {
   const decodedToken = jwt.verify(request.token, process.env.SECRET);
   if (!decodedToken.id) {
     return response.status(401).json({ error: 'token invalid' });

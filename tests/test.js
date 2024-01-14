@@ -13,6 +13,23 @@ const Blog = require('../models/blog');
 // eslint-disable-next-line object-curly-newline
 const { dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes } = require('../utils/list_helper');
 
+// creating test user with token
+let token;
+beforeAll(async () => {
+  const user = {
+    username: 'testuser',
+    password: 'testpassword',
+  };
+  await api.post('/api/users').send(user);
+  // Log in
+  const loginResponse = await api.post('/api/login').send({
+    username: 'testuser',
+    password: 'testpassword',
+  });
+  // Store the token for later use
+  token = loginResponse.body.token;
+});
+
 // to reset blogs in DB on each test and do it with the blog scheme.
 beforeEach(async () => {
   await Blog.deleteMany({});
@@ -52,7 +69,7 @@ describe('most Blogs', () => {
       author: 'Robert C. Martin',
       blogs: 3,
     });
-  }, 100000);
+  }, 10000);
 });
 
 describe('most Likes', () => {
@@ -91,39 +108,67 @@ describe('exercise 4.9', () => {
 });
 
 describe('exercise 4.10', () => {
-  test('HTTP POST succesfully creates a new blog post', async () => {
+  test('HTTP POST succesfully creates a new blog post when token is provided', async () => {
+    console.log(token);
+    expect(token).toBeDefined();
     // creating blog item to test post
     const newBlog = {
       title: 'Posting blogs is cool',
       author: 'Reinout Schols',
       url: 'http://fullstackopen.com',
       likes: 100000,
-      __v: 0,
     };
-    // sending newBlog
+    // posting newBlog
     console.log('Making POST request to create a new blog post...');
     const postResponse = await api
       .post('/api/blogs')
+      .set('authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/);
-    console.log('POST request successful. Retrieving blog list...');
+    console.log('POST request successful.');
 
-    const newBlogResponse = postResponse.body;
+    const newBlogResponse = {
+      ...newBlog,
+      user: {
+        username: 'testuser',
+        id: '65a3abe903be69b624c3b8cc',
+      },
+      id: postResponse.body.id,
+    };
     console.log(newBlogResponse);
     // getting all the blogs
     const response = await api.get('/api/blogs');
     const blogs = response.body;
     // logging new length
     console.log('Current blog list length:', response.body.length);
-
+    console.log(blogs);
     expect(blogs).toHaveLength(helper.initialBlogs.length + 1);
-    expect(blogs).toContainEqual(newBlogResponse);
+    expect(blogs).toEqual(expect.arrayContaining([expect.objectContaining(newBlogResponse)]));
   }, 10000);
 });
 
+describe('exercise 4.23', () => {
+  test('HTTP POST returns 401 error when creating a new blog without providing token', async () => {
+    // creating blog item to test post
+    const newBlog = {
+      title: 'Posting blogs is cool',
+      author: 'Reinout Schols',
+      url: 'http://fullstackopen.com',
+      likes: 100000,
+    };
+    // posting newBlog
+    console.log('Making POST request to create a new blog post with token missing...');
+    const postResponse = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401);
+
+    expect(postResponse.body).toHaveProperty('error', 'Token missing');
+  }, 10000);
+});
 describe('exercise 4.11', () => {
-  test('if like property is missing, the value will default to 0', async () => {
+  test('if like property of blog is missing, the value will default to 0', async () => {
     // defining new blog without like property:
     const newBlog = {
       title: 'defaulting values is the best',
@@ -133,10 +178,11 @@ describe('exercise 4.11', () => {
     };
     const postResponse = await api
       .post('/api/blogs')
+      .set('authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(201)
       .expect('Content-Type', /application\/json/);
-    console.log('POST request successful. Retrieving blog list...');
+    console.log('POST request successful.');
 
     const newBlogResponse = postResponse.body;
     console.log(`Likes of non-defined like property: ${newBlogResponse.likes}`);
@@ -153,10 +199,12 @@ describe('exercise 4.12', () => {
       likes: 5500,
       __v: 0,
     };
-    await api
+    const noUrl = await api
       .post('/api/blogs')
+      .set('authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(400);
+    console.log(noUrl.body.error);
     // For no title
     const newBlog2 = {
       author: 'Reinout Schols',
@@ -164,10 +212,12 @@ describe('exercise 4.12', () => {
       likes: 5500,
       v: 0,
     };
-    await api
+    const noTitle = await api
       .post('/api/blogs')
+      .set('authorization', `Bearer ${token}`)
       .send(newBlog2)
       .expect(400);
+    console.log(noTitle.body.error);
   }, 10000);
 });
 
