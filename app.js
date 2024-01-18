@@ -1,18 +1,24 @@
+/* eslint-disable import/order */
+/* eslint-disable global-require */
 // actual express app.
 const express = require('express');
 const config = require('./utils/config');
 
 const app = express();
-// eslint-disable-next-line import/order
 const cors = require('cors');
+const logger = require('./utils/logger');
+const mongoose = require('mongoose');
+
 const blogsRouter = require('./controllers/blogs');
 const usersRouter = require('./controllers/users');
 const loginRouter = require('./controllers/login');
-const middleware = require('./utils/middleware');
-const logger = require('./utils/logger');
 
-// eslint-disable-next-line import/order
-const mongoose = require('mongoose');
+if (process.env.NODE_ENV === 'test') {
+  const testingRouter = require('./controllers/testing');
+  app.use('/api/testing', testingRouter);
+}
+
+const middleware = require('./utils/middleware');
 
 mongoose.set('strictQuery', false);
 
